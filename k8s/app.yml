@@ -1,0 +1,49 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: doc-search-app
+  namespace: doc-search
+spec:
+  selector:
+    app: doc-search
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doc-search-app
+  namespace: doc-search
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: doc-search
+  template:
+    metadata:
+      labels:
+        app: doc-search
+    spec:
+      containers:
+        - name: app
+          image: docsearch-app:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_ELASTICSEARCH_URIS
+              value: "http://elasticsearch:9200"
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:h2:file:/data/docsearchdb"
+            - name: STORAGE_UPLOAD_DIR
+              value: "/data/uploads"
+            - name: JAVA_OPTS
+              value: "-Xms256m -Xmx512m"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}

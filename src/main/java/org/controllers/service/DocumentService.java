@@ -1,3 +1,28 @@
+/**
+ * Core document management service orchestrating the complete document processing pipeline.
+ 
+ * Document Upload Pipeline:
+ * 1. Store file to filesystem via FileStorageService
+ * 2. Save metadata to H2 database via JPA repository
+ * 3. Extract text content using appropriate DocumentParser (Strategy pattern)
+ *    - ExcelParser for .xlsx/.xls
+ *    - WordParser for .docx/.doc
+ *    - PptParser for .pptx/.ppt
+ *    - ImageParser for .png/.jpg/.jpeg/.tiff/.bmp/.webp
+ * 4. Index extracted text into Elasticsearch via IndexingService
+ * 5. Update document indexed status in database
+
+ * Error Handling:
+ * - Graceful degradation: file saved even if text extraction or indexing fails
+ * - Specific error messages for each failure stage
+ * - Transactional boundary ensures database consistency
+
+ * Parser Discovery:
+ * - Uses Spring's automatic collection injection (List<DocumentParse>)
+ * - Strategy pattern: iterates parsers to find one supporting the file extension
+ * - New formats require only implementing DocumentParse interface
+ */
+
 package org.controllers.service;
 
 import lombok.RequiredArgsConstructor;
@@ -44,7 +69,7 @@ public class DocumentService {
                 .fileSize(file.getSize())
                 .filePath(filePath)
                 .uploadedAt(LocalDateTime.now())
-                .indexed(false)  // Явно указываем что не проиндексирован
+                .indexed(false)
                 .build();
 
         document = documentRepository.save(document);
@@ -136,7 +161,6 @@ public class DocumentService {
     }
 
     private DocumentResponse mapToResponse(DocumentEntity document, String message) {
-        // Определяем сообщение на основе статуса
         String finalMessage = message;
         if (finalMessage == null) {
             finalMessage = document.isIndexed() ? "Indexed" : "Not indexed";
@@ -148,7 +172,7 @@ public class DocumentService {
                 .contentType(document.getContentType())
                 .fileSize(document.getFileSize())
                 .fileExtension(document.getFileExtension())
-                .filePath(document.getFilePath())  // Добавь это поле в DocumentResponse!
+                .filePath(document.getFilePath())
                 .indexed(document.isIndexed())
                 .uploadedAt(document.getUploadedAt())
                 .message(finalMessage)

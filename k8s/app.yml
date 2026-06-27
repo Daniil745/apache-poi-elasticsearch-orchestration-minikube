@@ -1,3 +1,8 @@
+# Kubernetes Deployment and Service for DocSearch Spring Boot application.
+# Runs single replica with 256-512MB JVM heap, connects to Elasticsearch
+# via internal ClusterIP service. Uses emptyDir volume for document storage.
+# Image is loaded locally via minikube image load (IfNotPresent policy).
+
 ---
 apiVersion: v1
 kind: Service

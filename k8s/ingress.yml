@@ -1,3 +1,7 @@
+# Kubernetes Ingress configuration for external HTTP access to DocSearch API.
+# Routes all traffic to doc-search-app service on port 8080.
+# Sets 50MB proxy body size limit for document file uploads via nginx annotation.
+
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

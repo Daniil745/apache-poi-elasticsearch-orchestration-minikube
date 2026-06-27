@@ -1,3 +1,41 @@
+# Docker Compose - DocSearch Platform (Production-Ready)
+#
+# Architecture:
+#   Nginx (80/443) → App (8080) → Elasticsearch (9200)
+#                              → Ollama (11434)
+#
+# Services:
+#   1. elasticsearch - Full-text search engine, single-node dev cluster
+#   2. ollama - Local LLM server with qwen2.5-coder:1.5b model
+#   3. app - Spring Boot REST API with OCR and AI analysis
+#   4. h2-console - Database management UI (dev/debug only)
+#   5. nginx - Reverse proxy, single entry point for all HTTP traffic
+#
+# Best Practices Applied:
+#   - YAML anchors (&common-logging, &common-healthcheck) for DRY config reuse
+#   - Named volumes with custom names for data persistence across restarts
+#   - ulimits configured for Elasticsearch (memlock unlimited, nofile 65536)
+#   - Healthchecks with intervals, timeouts, retries and start_period for all services
+#   - Restart policy: unless-stopped for automatic recovery
+#   - Fixed subnet (172.28.0.0/16) for predictable Docker networking
+#   - JSON-file logging driver with 10MB max-size and 3-file rotation
+#   - Environment variables with default values using ${VAR:-default} syntax
+#   - Nginx as only exposed service (ports 80/443), backends use internal expose
+#   - depends_on with service_healthy condition for proper startup ordering
+#
+# Memory Optimization (for 4-8GB hosts):
+#   - Elasticsearch heap: 128m-256m (xpack security/ML/watcher disabled)
+#   - Spring Boot JVM: 128m-256m with G1GC
+#   - Ollama: single parallel request, 1min keep-alive, 1.5b model
+#   - Kibana removed to save ~300MB
+#   - Total footprint: ~1.5GB (fits 4GB host with Docker Desktop)
+#
+# Security:
+#   - Elasticsearch isolated (expose only, not published)
+#   - App runs as non-root user (appuser in Dockerfile)
+#   - Nginx is single entry point, all backends hidden
+#   - Read-only mounts for nginx configs (:ro flag)
+
 version: '3.8'
 
 x-common-logging: &common-logging

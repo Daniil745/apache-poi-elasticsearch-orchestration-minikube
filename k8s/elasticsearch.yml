@@ -1,3 +1,17 @@
+# Kubernetes Deployment and Service for Elasticsearch 8.11.0 single-node cluster.
+#
+# Memory optimization for Minikube with 5700MB total host memory:
+# - JVM heap reduced to 128m-256m (from default 512m-1g)
+# - Container limited to 384Mi memory / 300m CPU
+# - All xpack features disabled to save RAM:
+#   * Security (SSL/TLS) disabled - no encryption overhead
+#   * Machine Learning disabled - saves ~500MB
+#   * Watcher disabled - saves ~100MB
+# - Single-node discovery for development environment
+# - Image loaded locally via minikube cp to avoid external pulls
+#
+# Total memory footprint: ~400MB instead of ~1.5GB default
+
 ---
 apiVersion: v1
 kind: Service

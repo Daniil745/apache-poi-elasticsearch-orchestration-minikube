@@ -34,16 +34,16 @@ public class DocumentAIAnalysis {
                 .collect(Collectors.toList());
 
         if (foundObjects.isEmpty()) {
-            return "Документы не найдены в базе";
+            return "Document not found in base";
         }
 
         String aiContext = foundObjects.stream()
-                .map(doc -> String.format("Файл: %s\nСодержание:\n%s", doc.getFilename(), doc.getContent()))
+                .map(doc -> String.format("File: %s\nContain:\n%s", doc.getFilename(), doc.getContent()))
                 .collect(Collectors.joining("\n\n----\n\n"));
 
         return this.chatClient.prompt()
-                .system(s -> s.text("Ты - ассистент по анализу документов. Отвечай на русском языке кратко и по делу."))
-                .user(u -> u.text("Документы:\n{context}\n\nВопрос: {question}")
+                .system(s -> s.text("You are a document analysis assistant. Answer in English, briefly and to the point."))
+                .user(u -> u.text("Documents:\n{context}\n\nQuestion: {question}")
                         .param("context", aiContext)
                         .param("question", userQuestion))
                 .call()

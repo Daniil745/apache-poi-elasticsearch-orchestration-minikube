@@ -18,41 +18,31 @@ services:
     container_name: docsearch-elasticsearch
     restart: unless-stopped
     logging: *common-logging
-
     environment:
       - cluster.name=${ES_CLUSTER_NAME:-doc-search-cluster}
       - node.name=${ES_NODE_NAME:-node-1}
       - discovery.type=single-node
-
       - xpack.security.enabled=false
       - xpack.security.enrollment.enabled=false
       - xpack.security.http.ssl.enabled=false
       - xpack.security.transport.ssl.enabled=false
-
-      - ES_JAVA_OPTS=-Xms${ES_HEAP_SIZE:-512m} -Xmx${ES_HEAP_SIZE:-512m}
+      - ES_JAVA_OPTS=-Xms${ES_HEAP_SIZE:-128m} -Xmx${ES_HEAP_SIZE:-256m}
       - indices.memory.index_buffer_size=20%
       - indices.queries.cache.size=10%
-
       - network.host=0.0.0.0
       - http.port=${ES_PORT_HTTP:-9200}
       - transport.port=${ES_PORT_TRANSPORT:-9300}
-
       - path.data=/usr/share/elasticsearch/data
       - path.logs=/usr/share/elasticsearch/logs
-
       - bootstrap.memory_lock=true
-
       - http.cors.enabled=true
       - http.cors.allow-origin="*"
-
     expose:
       - "9200"
       - "9300"
-
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
       - elasticsearch-logs:/usr/share/elasticsearch/logs
-
     ulimits:
       memlock:
         soft: -1
@@ -60,57 +50,48 @@ services:
       nofile:
         soft: 65536
         hard: 65536
-
     healthcheck:
       test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health?local=true | grep -q 'green\\|yellow'"]
       <<: *common-healthcheck
-
     networks:
       - elastic
-
     labels:
       - "service=elasticsearch"
 
-  kibana:
-    image: docker.elastic.co/kibana/kibana:${KIBANA_VERSION:-8.11.0}
-    container_name: docsearch-kibana
+  ollama:
+    image: ollama/ollama:${OLLAMA_VERSION:-0.6.5}
+    container_name: docsearch-ollama
     restart: unless-stopped
     logging: *common-logging
-
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+      - ollama-models:/root/.ollama/models
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - SERVER_PORT=5601
-      - SERVER_NAME=kibana
-      - SERVER_HOST=0.0.0.0
-      - SERVER_BASEPATH=/kibana
-      - SERVER_REWRITEBASEPATH=true
-
-      - ELASTICSEARCH_SSL_VERIFICATIONMODE=none
-      - XPACK_SECURITY_ENABLED=false
-      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY="min-32-byte-long-encryption-key-1234567890"
-
-      - SERVER_MAXPAYLOADBYTES=10485760
-      - OPS_INTERVAL=60000
-
-      - LOGGING_ROOT_LEVEL=info
-      - LOGGING_APPENDERS_DEFAULT_TYPE=console
-
-    expose:
-      - "5601"
-
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_KEEP_ALIVE=1m
+      - OLLAMA_NUM_PARALLEL=1
+      - OLLAMA_MODEL=qwen2.5-coder:1.5b
+    entrypoint: [ "sh", "-c" ]
+    command:
+      - |
+        ollama serve &
+        sleep 5
+        echo "Pulling qwen2.5-coder:1.5b model..."
+        ollama pull qwen2.5-coder:1.5b
+        echo "Model ready!"
+        wait
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:5601/api/status | grep -q 'Looking good'"]
-      <<: *common-healthcheck
-
+      test: [ "CMD", "curl", "-f", "http://localhost:11434/api/tags" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
     networks:
       - elastic
-
     labels:
-      - "service=kibana"
+      - "service=ollama"
 
   app:
     build:
@@ -122,50 +103,40 @@ services:
     container_name: docsearch-app
     restart: unless-stopped
     logging: *common-logging
-
     environment:
       - SPRING_PROFILES_ACTIVE=${APP_PROFILE:-dev}
       - SERVER_PORT=8080
-
       - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
-
       - SPRING_DATASOURCE_URL=jdbc:h2:file:/data/docsearchdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
       - SPRING_DATASOURCE_USERNAME=sa
       - SPRING_DATASOURCE_PASSWORD=
       - SPRING_H2_CONSOLE_ENABLED=true
-
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - SPRING_JPA_SHOW_SQL=false
       - SPRING_JPA_OPEN_IN_VIEW=false
-
       - SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=50MB
       - SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE=50MB
-
       - STORAGE_UPLOAD_DIR=/data/uploads
-
-      - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
-
+      - JAVA_OPTS=-Xms128m -Xmx256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
       - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
       - MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS=always
-
+      - SPRING_AI_OLLAMA_BASE_URL=http://ollama:11434
+      - SPRING_AI_OLLAMA_CHAT_MODEL=qwen2.5-coder:1.5b
+      - SPRING_AI_OLLAMA_CHAT_OPTIONS_MODEL=qwen2.5-coder:1.5b
+      - SPRING_AI_OLLAMA_EMBEDDINGS_MODEL=qwen2.5-coder:1.5b
     expose:
       - "8080"
-
     volumes:
       - app-data:/data
       - app-logs:/app/logs
-
     depends_on:
       elasticsearch:
         condition: service_healthy
-
     healthcheck:
       test: ["CMD-SHELL", "curl -s http://localhost:8080/actuator/health | grep -q 'UP'"]
       <<: *common-healthcheck
-
     networks:
       - elastic
-
     labels:
       - "service=app"
 
@@ -176,16 +147,12 @@ services:
     profiles:
       - dev
       - debug
-
     environment:
       - H2_OPTIONS=-ifNotExists -web -webAllowOthers -webPort 9092
-
     expose:
       - "9092"
-
     networks:
       - elastic
-
     labels:
       - "service=h2-console"
 
@@ -194,30 +161,23 @@ services:
     container_name: docsearch-nginx
     restart: unless-stopped
     logging: *common-logging
-
     ports:
       - "80:80"
       - "443:443"
-
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - nginx-logs:/var/log/nginx
-
     depends_on:
       - app
-      - kibana
-
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-
     networks:
       - elastic
-
     labels:
       - "service=nginx"
 
@@ -237,6 +197,12 @@ volumes:
   nginx-logs:
     driver: local
     name: docsearch_nginx_logs
+  ollama-data:
+    driver: local
+    name: docsearch_ollama_data
+  ollama-models:
+    driver: local
+    name: docsearch_ollama_models
 
 networks:
   elastic:

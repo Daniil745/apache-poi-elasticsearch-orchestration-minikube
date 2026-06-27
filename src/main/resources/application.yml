@@ -5,32 +5,54 @@ spring:
   datasource:
     url: jdbc:h2:mem:docsearchdb
     driver-class-name: org.h2.Driver
-    username: ${USER_NAME_DATASOURCE}
-    password: ${PASSWORD_DATASOURCE}
+    username: ${USER_NAME_DATASOURCE:sa}
+    password: ${PASSWORD_DATASOURCE:}
 
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: update
     show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
 
   h2:
     console:
       enabled: true
       path: /h2-console
+      settings:
+        web-allow-others: true
 
   servlet:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
+      file-size-threshold: 2KB
 
   elasticsearch:
-    uris: http://localhost:9200
+    uris: ${SPRING_ELASTICSEARCH_URIS:http://localhost:9200}
     connection-timeout: 5s
     socket-timeout: 30s
+    username: ${ELASTICSEARCH_USERNAME:}
+    password: ${ELASTICSEARCH_PASSWORD:}
+
+  ai:
+    ollama:
+      base-url: ${SPRING_AI_OLLAMA_BASE_URL:http://localhost:11434}
+      chat:
+        model: ${SPRING_AI_OLLAMA_CHAT_MODEL:qwen2.5-coder:1.5b}
+        options:
+          temperature: 0.7
+          top-p: 0.9
+          max-tokens: 2048
+      embedding:
+        model: ${SPRING_AI_OLLAMA_EMBEDDINGS_MODEL:qwen2.5-coder:1.5b}
+        options:
+          temperature: 0.0
 
 storage:
-  upload-dir: ./uploads
+  upload-dir: ${STORAGE_UPLOAD_DIR:./uploads}
   allowed-extensions:
     - xlsx
     - xls
@@ -38,12 +60,21 @@ storage:
     - doc
     - pptx
     - ppt
+    - png
+    - jpg
+    - jpeg
+    - tiff
+    - bmp
+    - webp
+    - pdf
+    - txt
+    - csv
 
 elasticsearch:
   index:
-    name: documents
-    number-of-shards: 1
-    number-of-replicas: 0
+    name: ${ES_INDEX_NAME:documents}
+    number-of-shards: ${ES_INDEX_SHARDS:1}
+    number-of-replicas: ${ES_INDEX_REPLICAS:0}
 
   search:
     default-size: 10
@@ -54,5 +85,32 @@ elasticsearch:
 logging:
   level:
     com.docsearch: DEBUG
-    org.springframework.data.elasticsearch: WARN
-    org.elasticsearch.client: WARN
+    org.springframework.data.elasticsearch: INFO
+    org.elasticsearch.client: INFO
+    org.springframework.ai: DEBUG
+
+ocr:
+  tesseract:
+    datapath: ${TESSDATA_PREFIX:/usr/share/tessdata}
+    language: ${TESSERACT_LANG:rus+eng+bel}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+server:
+  port: ${SERVER_PORT:8080}
+  tomcat:
+    max-http-form-post-size: 50MB
+    connection-timeout: 60000

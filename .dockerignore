@@ -1,0 +1,88 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile
+Dockerfile.*
+docker-compose*.yml
+.dockerignore
+
+# Build artifacts
+target/
+*.jar
+*.war
+*.ear
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+.mvn/
+
+# Logs
+logs/
+*.log
+*.log.gz
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.swp
+*.swo
+
+# Node modules (если есть)
+node_modules/
+npm-debug.log*
+
+# Python (если есть)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Nginx
+nginx/ssl/*.key
+nginx/ssl/*.pem
+nginx/ssl/*.crt
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Docker volumes (локальные данные)
+data/
+uploads/
+elasticsearch-data/
+elasticsearch-logs/
+app-data/
+app-logs/
+nginx-logs/
+ollama-data/
+ollama-models/
+
+# Test files
+test/
+tests/
+*.test.js
+*.spec.js
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Misc
+*.bak
+*.orig
+*.rej
+*~

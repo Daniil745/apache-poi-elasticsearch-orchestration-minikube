@@ -1,3 +1,29 @@
+# Multi-stage Dockerfile for DocSearch Application
+#
+# Stage 1 (build):
+#   - Maven 3.9 + Eclipse Temurin 17 Alpine
+#   - Caches dependencies via go-offline for faster rebuilds
+#   - Builds Spring Boot fat JAR skipping tests
+#
+# Stage 2 (runtime):
+#   - Eclipse Temurin 17 JRE Alpine (minimal image)
+#   - Installs Tesseract OCR with Russian and English language data
+#   - Configures timezone to Europe/Moscow
+#   - Creates non-root appuser for security
+#   - Sets TESSDATA_PREFIX for OCR language files path
+#   - Configures JVM: 256-512MB heap, G1GC, 200ms max pause
+#   - Healthcheck via /actuator/health endpoint
+#   - Exposes port 8080
+#
+# Security:
+#   - Runs as non-root user (appuser)
+#   - Minimal Alpine base image
+#   - No unnecessary packages
+#
+# Size optimization:
+#   - Multi-stage build discards Maven and JDK after compilation
+#   - Alpine Linux base for minimal footprint
+
 FROM maven:3.9-eclipse-temurin-17-alpine AS build
 WORKDIR /app
 COPY pom.xml .

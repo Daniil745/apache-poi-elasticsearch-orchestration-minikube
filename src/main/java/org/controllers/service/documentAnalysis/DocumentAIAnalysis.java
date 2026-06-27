@@ -1,3 +1,19 @@
+/**
+ * AI-powered document analysis service that combines Elasticsearch retrieval
+ * with Ollama LLM for intelligent question answering over indexed documents.
+
+ * Flow:
+ * 1. Retrieves top 5 documents from Elasticsearch using matchAll query
+ * 2. Builds context from document filenames and content
+ * 3. Sends context + user question to Ollama LLM via Spring AI ChatClient
+ * 4. Returns AI-generated answer based solely on provided document context
+  
+ * The service uses a retrieval-augmented generation (RAG) pattern:
+ * - Retrieval: Elasticsearch fetches relevant documents
+ * - Augmentation: Documents are formatted into LLM context
+ * - Generation: Ollama generates answer from provided context
+ */
+
 package org.controllers.service.documentAnalysis;
 
 import org.controllers.model.elastic.DocumentIndex;

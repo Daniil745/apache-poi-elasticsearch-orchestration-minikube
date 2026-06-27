@@ -1,3 +1,20 @@
+/**
+ * Image document parser using Tesseract OCR engine for text extraction
+ * from scanned documents and images.
+ 
+ * Supported formats: PNG, JPG, JPEG, TIFF, BMP, WebP
+ * Supported languages: Russian (rus), English (eng), Belarusian (bel)
+
+ * Configuration:
+ * - Uses TESSDATA_PREFIX environment variable for language data path
+ * - Falls back to /usr/share/tessdata if variable not set
+ * - PageSegMode 3: Fully automatic page segmentation
+
+ * Implements DocumentParse interface for automatic discovery
+ * via Strategy pattern in DocumentService parser list.
+ */
+
+
 package org.controllers.service.parse;
 
 import lombok.extern.slf4j.Slf4j;

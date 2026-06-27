@@ -1,3 +1,6 @@
+# Kubernetes Namespace for logical isolation of all DocSearch resources.
+# Groups deployments, services, ingress and pods under single namespace.
+
 apiVersion: v1
 kind: Namespace
 metadata:

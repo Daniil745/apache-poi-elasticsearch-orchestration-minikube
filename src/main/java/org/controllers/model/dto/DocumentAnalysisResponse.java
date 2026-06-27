@@ -1,3 +1,9 @@
+/**
+ * Response DTO for AI-powered document analysis endpoint.
+ * Contains AI-generated answer with success/error status.
+ * Uses static factory methods for clean success/error response creation.
+ */
+
 package org.controllers.model.dto;
 
 import lombok.Getter;
